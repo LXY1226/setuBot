@@ -16,13 +16,14 @@ type (
 	Config struct {
 		Account AccountConf
 		Logging LoggingConf
+		App     interface{}
 		//App MainConf       `json:"app"`
 	}
 	AccountConf struct {
-		QQ         int64
-		Password   string
-		PassMD5Str string   `json:"PassMD5"`
-		PassMD5    [16]byte `json:"-"`
+		QQ       int64
+		Password string
+		PassStr  string
+		PassByte [16]byte `json:"-"`
 	}
 	LoggingConf struct {
 		Enable       bool
@@ -65,15 +66,15 @@ func load() {
 	}
 	if Conf.Account.Password != "" {
 		hash := md5.Sum([]byte(Conf.Account.Password))
-		Conf.Account.PassMD5 = hash
-		Conf.Account.PassMD5Str = base64.RawStdEncoding.EncodeToString(hash[:])
+		Conf.Account.PassByte = hash
+		Conf.Account.PassStr = base64.RawStdEncoding.EncodeToString(hash[:])
 		Conf.Account.Password = ""
 	}
 	save()
 }
 
 func save() {
-	_, err := base64.RawStdEncoding.Decode(Conf.Account.PassMD5[:], []byte(Conf.Account.PassMD5Str))
+	_, err := base64.RawStdEncoding.Decode(Conf.Account.PassByte[:], []byte(Conf.Account.PassStr))
 	if err != nil {
 		ErrOrExit("无法读取MD5，请不要乱改", err.Error())
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/text/encoding/simplifiedchinese"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -16,7 +17,7 @@ import (
 	"time"
 )
 
-var bClient = client.NewClientMd5(Bot.Conf.Account.QQ, Bot.Conf.Account.PassMD5)
+var bClient = client.NewClientMd5(Bot.Conf.Account.QQ, Bot.Conf.Account.PassByte)
 var json = jsoniter.ConfigFastest
 
 type loliconApiResp struct {
@@ -33,7 +34,6 @@ var setuChan = make(chan *message.SendingMessage, 4)
 
 func main() {
 	rsp, err := bClient.Login()
-	//os.Exit(0)
 	if err != nil {
 		panic(err)
 	}
@@ -145,6 +145,12 @@ func RouteMsg(c *client.QQClient, msg *message.GroupMessage) {
 				c.SendGroupMessage(msg.GroupCode, message.NewSendingMessage().Append(message.NewText("无tag")))
 				//SendSETU(c, msg, setus.TagRand(s[2:]))
 			}
+			if s[:13] == "~切噜～♪" {
+				c.SendGroupMessage(msg.GroupCode, message.NewSendingMessage().Append(message.NewText(cheru2str(s[13:]))))
+			}
+			if s[:13] == "~切噜一下" {
+				c.SendGroupMessage(msg.GroupCode, message.NewSendingMessage().Append(message.NewText(str2cheru(s[13:]))))
+			}
 			if msg.Sender.Uin == 767763591 {
 				if s[:2] == "p+" {
 					AddSETU(c, msg, s[2:])
@@ -165,6 +171,48 @@ func RouteMsg(c *client.QQClient, msg *message.GroupMessage) {
 		}
 	}
 	return
+}
+
+var cheruSet = []rune("切卟叮咧哔唎啪啰啵嘭噜噼巴拉蹦铃")
+
+var cheruMap = func() map[rune]byte {
+	m := make(map[rune]byte)
+	i := 0
+	for _, r := range cheruSet {
+		m[r] = byte(i)
+		i++
+	}
+	return m
+}()
+
+func str2cheru(str string) string {
+	encoded, err := simplifiedchinese.GB18030.NewEncoder().String(str)
+	if err != nil {
+		return "切噜....切不出来" + err.Error()
+	}
+	s := make([]rune, len(str)*2)[:0]
+	for _, b := range []byte(encoded) {
+		s = append(s, cheruSet[b&0xf])
+		s = append(s, cheruSet[b>>4 /*& 0xf*/])
+	}
+	return "切噜～♪切" + string(s)
+}
+
+func cheru2str(str string) string {
+	if str[:3] != "切" {
+		return str
+	}
+	r := []rune(str)
+	s := make([]byte, len(str))[:0]
+	for i := 1; i < len(r); i += 2 {
+		s = append(s, cheruMap[r[i]]|cheruMap[r[i+1]]<<4)
+	}
+	decoded, err := simplifiedchinese.GB18030.NewDecoder().String(string(s))
+	if err != nil {
+		return "切噜....切不出来" + err.Error()
+	}
+
+	return "~:" + decoded
 }
 
 const alphabet = "*************************************************" +
@@ -339,7 +387,7 @@ var apiReq = new(fasthttp.Request)
 
 func initSETU() {
 	_ = os.Mkdir("setu", 0644)
-	apiReq.SetRequestURI(API)
+	apiReq.SetRequestURI("https://api.lolicon.app/setu/?proxy=disable&num=10&apikey=" + apikey)
 	setus = NewList()
 	go loopSETU()
 }

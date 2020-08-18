@@ -1,6 +1,7 @@
 package Bot
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -31,8 +32,8 @@ func ERRORf(f string, a ...interface{}) string {
 type LogWriter byte // dummy
 
 func (w LogWriter) Write(p []byte) (n int, err error) {
-	//p2 := bytes.ReplaceAll(p, []byte("\r"), []byte("\\r"))
-	//p2 = bytes.ReplaceAll(p2, []byte("\n"), []byte("\\n"))
+	p2 := bytes.ReplaceAll(p, []byte("\r"), []byte("\\r"))
+	p2 = bytes.ReplaceAll(p2, []byte("\n"), []byte("\\n"))
 	_, _ = os.Stdout.Write(p)
 	n, err = logF.Write(p)
 	if err == nil {
